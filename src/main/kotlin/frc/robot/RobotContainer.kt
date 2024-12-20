@@ -4,6 +4,7 @@ import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.math.MathUtil
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.units.Units
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -12,6 +13,8 @@ import frc.robot.subsystems.drive.Drive
 import frc.robot.subsystems.drive.DriveCommands
 import frc.robot.subsystems.drive.getGyroIO
 import frc.robot.subsystems.drive.getSwerveModuleIOs
+import frc.robot.subsystems.elevator.Elevator
+import frc.robot.subsystems.elevator.ElevatorIOReal
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -21,9 +24,12 @@ import frc.robot.subsystems.drive.getSwerveModuleIOs
  */
 object RobotContainer {
     private val swerveDrive: Drive
+    private val elevator: Elevator
     private val testController = CommandXboxController(2)
 
     init {
+        Elevator.initialize(ElevatorIOReal())
+        elevator = Elevator.getInstance()
         swerveDrive = Drive(getGyroIO(), getSwerveModuleIOs())
 
         registerAutoCommands()
@@ -32,12 +38,13 @@ object RobotContainer {
     }
 
     private fun configureDefaultCommands() {
-        swerveDrive.defaultCommand = DriveCommands.joystickDrive(
-            swerveDrive,
-            { MathUtil.applyDeadband(driverController().leftY, 0.15) },
-            { MathUtil.applyDeadband(driverController().leftX, 0.15) },
-            { 0.7 * MathUtil.applyDeadband(-driverController().rightX, 0.15) }
-        )
+//        swerveDrive.defaultCommand = DriveCommands.joystickDrive(
+//            swerveDrive,
+//            { MathUtil.applyDeadband(driverController().leftY, 0.15) },
+//            { MathUtil.applyDeadband(driverController().leftX, 0.15) },
+//            { 0.7 * MathUtil.applyDeadband(-driverController().rightX, 0.15) }
+//        )
+        elevator.defaultCommand= elevator.setPower({driverController().rightTriggerAxis- driverController().leftTriggerAxis})
     }
 
     private fun configureButtonBindings() {
@@ -47,6 +54,9 @@ object RobotContainer {
             }, swerveDrive)
                 .ignoringDisable(true)
         )
+        driverController().a().onTrue(elevator.reset())
+        driverController().x().whileTrue(elevator.setPosition(Units.Centimeter.of(50.0)))
+        driverController().b().whileTrue(elevator.setPosition(Units.Centimeter.of(100.0)))
     }
 
     fun getAutonomousCommand(): Command = Commands.none()
